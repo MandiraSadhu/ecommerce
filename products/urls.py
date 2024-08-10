@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
-from .views import  CategoryListCreateView, CategoryDetailView, ProductListCreateView, ProductDetailView
+from .views import  CategoryListCreateView, CategoryDetailView, ProductListCreateView, ProductDetailView, ExportProductsCSV, upload_video
 
 urlpatterns = [
     # Your other URLs here
@@ -11,5 +11,8 @@ urlpatterns = [
     path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category-detail'),
     path('products/', ProductListCreateView.as_view(), name='product-list-create'),
     path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
+
+    path('upload/video/<int:product_id>/', upload_video, name='upload-video'),
+    path('export/products/csv/', ExportProductsCSV.as_view(), name='export-products-csv'),
 
 ]

@@ -7,6 +7,9 @@ from .permissions import IsAdminOrStaff, IsAdmin
 from .utils import encrypt_data, decrypt_data
 from django.shortcuts import get_object_or_404
 from .tasks import process_video
+import csv
+from django.http import HttpResponse
+from rest_framework import pagination
 
 # Category Views
 class CategoryListCreateView(generics.ListCreateAPIView):
@@ -76,3 +79,32 @@ def upload_video(request, product_id):
             
             return Response({"message": "Video upload successful, processing started."}, status=status.HTTP_202_ACCEPTED)
         return Response({"error": "No video file provided."}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class ProductPagination(pagination.PageNumberPagination):
+    page_size = 1000  
+
+class ExportProductsCSV(generics.GenericAPIView):
+    permission_classes = [IsAdmin]
+    pagination_class = ProductPagination
+
+    def get(self, request, *args, **kwargs):
+        paginator = self.pagination_class()
+        products = Product.objects.all()
+        paginated_products = paginator.paginate_queryset(products, request)
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="products.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Category', 'Title', 'Description', 'Price', 'Status', 'Created At', 'Updated At'])
+        for product in paginated_products:
+            writer.writerow([
+                product.id,
+                product.category.name,
+                product.title,
+                product.description,
+                product.price,
+                product.status,
+                product.created_at,
+                product.updated_at
+            ])
+        return response
