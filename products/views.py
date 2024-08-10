@@ -1,9 +1,12 @@
 from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework import status
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
 from .permissions import IsAdminOrStaff, IsAdmin
 from .utils import encrypt_data, decrypt_data
+from django.shortcuts import get_object_or_404
+from .tasks import process_video
 
 # Category Views
 class CategoryListCreateView(generics.ListCreateAPIView):
@@ -57,3 +60,19 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_destroy(self, instance):
         instance.delete()
+
+
+def upload_video(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    if request.method == 'POST':
+        video_file = request.FILES.get('video')
+        if video_file:
+            # Save the uploaded file to the model
+            product.video.save(video_file.name, video_file)
+            
+            # Enqueue the video processing task
+            process_video.delay(product_id=product.id, video_file_path=product.video.path)
+            
+            return Response({"message": "Video upload successful, processing started."}, status=status.HTTP_202_ACCEPTED)
+        return Response({"error": "No video file provided."}, status=status.HTTP_400_BAD_REQUEST)

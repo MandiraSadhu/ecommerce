@@ -43,7 +43,7 @@ INSTALLED_APPS = [
 
     'djoser',
     'django_celery_beat',
-    'products',
+    'products.apps.ProductsConfig',
 ]
 
 MIDDLEWARE = [
